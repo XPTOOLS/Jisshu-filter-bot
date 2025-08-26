@@ -17,7 +17,6 @@ logging.basicConfig(
 logging.getLogger("aiohttp").setLevel(logging.ERROR)
 logging.getLogger("aiohttp.web").setLevel(logging.ERROR)
 
-
 from pyrogram import __version__
 from pyrogram.raw.all import layer
 from database.ia_filterdb import Media
@@ -34,18 +33,61 @@ import asyncio
 from Jisshu.bot import JisshuBot
 from Jisshu.util.keepalive import ping_server
 from Jisshu.bot.clients import initialize_clients
+from pyrogram.errors import (
+    ChatWriteForbidden, ChatAdminRequired, ChannelPrivate, PeerIdInvalid,
+    ChatRestricted, UserBannedInChannel, RPCError, FloodWait
+)
 
 ppath = "plugins/*.py"
 files = glob.glob(ppath)
 JisshuBot.start()
 loop = asyncio.get_event_loop()
 
-pyrogram.utils.MIN_CHANNEL_ID = -1009147483647
+# remove this override if causing issues
+# pyrogram.utils.MIN_CHANNEL_ID = -1002285537624
+
+
+async def safe_send(chat_id, text):
+    if not chat_id:
+        logging.warning("No chat_id provided for startup notify; skipping.")
+        return
+    try:
+        if isinstance(chat_id, str) and chat_id.strip().lstrip("-").isdigit():
+            chat_id = int(chat_id)
+    except Exception:
+        pass
+
+    try:
+        chat = await JisshuBot.get_chat(chat_id)
+        if chat.type in ("group", "supergroup"):
+            me = await JisshuBot.get_me()
+            member = await JisshuBot.get_chat_member(chat.id, me.id)
+            if getattr(member, "restricted", False):
+                logging.error(f"Restricted in {chat.title} ({chat.id}); skipping notify.")
+                return
+        await JisshuBot.send_message(chat_id=chat.id, text=text, disable_web_page_preview=True)
+
+    except FloodWait as e:
+        await asyncio.sleep(e.value)
+        try:
+            await JisshuBot.send_message(chat_id=chat_id, text=text, disable_web_page_preview=True)
+        except Exception as ee:
+            logging.error(f"Second attempt failed for {chat_id}: {ee}")
+
+    except (ChatWriteForbidden, ChatAdminRequired, ChannelPrivate, PeerIdInvalid,
+            ChatRestricted, UserBannedInChannel) as e:
+        logging.error(f"Startup notify skipped for {chat_id}: {e}")
+
+    except RPCError as e:
+        logging.error(f"Startup notify RPCError for {chat_id}: {e}")
+
+    except Exception as e:
+        logging.exception(f"Unexpected error sending startup notify to {chat_id}: {e}")
 
 
 async def Jisshu_start():
     print("\n")
-    print("Credit - Telegram @JISSHU_BOTS")
+    print("Credit - Telegram @MEGAHUBBOTS")
     bot_info = await JisshuBot.get_me()
     JisshuBot.username = bot_info.username
     await initialize_clients()
@@ -59,7 +101,7 @@ async def Jisshu_start():
             load = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(load)
             sys.modules["plugins." + plugin_name] = load
-            print("JisshuBot Imported => " + plugin_name)
+            print("Megahubbots Imported => " + plugin_name)
     if ON_HEROKU:
         asyncio.create_task(ping_server())
     b_users, b_chats = await db.get_banned()
@@ -81,12 +123,11 @@ async def Jisshu_start():
     today = date.today()
     now = datetime.now(tz)
     time = now.strftime("%H:%M:%S %p")
-    await JisshuBot.send_message(
-        chat_id=LOG_CHANNEL, text=script.RESTART_TXT.format(me.mention, today, time)
-    )
-    await JisshuBot.send_message(
-        chat_id=SUPPORT_GROUP, text=f"<b>{me.mention} ʀᴇsᴛᴀʀᴛᴇᴅ 🤖</b>"
-    )
+
+    # safe startup notifications
+    await safe_send(LOG_CHANNEL, script.RESTART_TXT.format(me.mention, today, time))
+    await safe_send(SUPPORT_GROUP, f"<b>{me.mention} ʀᴇsᴛᴀʀᴛᴇᴅ 🤖</b>")
+
     app = web.AppRunner(await web_server())
     await app.setup()
     bind_address = "0.0.0.0"
