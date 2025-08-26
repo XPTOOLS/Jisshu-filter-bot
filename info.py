@@ -45,11 +45,11 @@ LOG_API_CHANNEL = int(environ.get("LOG_API_CHANNEL", "-1002285537624"))
 LOG_VR_CHANNEL = int(environ.get("LOG_VR_CHANNEL", "-1002285537624"))
 
 # MongoDB
-DATABASE_URI = environ.get("DATABASE_URI", "mongodb+srv://ramybeginning:ALLAHAKBAr%40232956@cluster0.ja2zly9.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
+DATABASE_URI = environ.get("DATABASE_URI", "")
 DATABASE_NAME = environ.get("DATABASE_NAME", "MovieHub")
 
 # Files index database url
-FILES_DATABASE = environ.get("FILES_DATABASE", "mongodb+srv://ramybeginning:ALLAHAKBAr%40232956@cluster0.ja2zly9.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
+FILES_DATABASE = environ.get("FILES_DATABASE", "")
 COLLECTION_NAME = environ.get("COLLECTION_NAME", "MovieDB")
 
 # Other Channel's
