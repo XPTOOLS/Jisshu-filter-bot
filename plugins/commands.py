@@ -50,7 +50,6 @@ verification_ids = {}
 
 @Client.on_message(filters.command("start") & filters.incoming)
 async def start(client: Client, message):
-    await message.react(emoji=random.choice(REACTIONS))
     m = message
     user_id = m.from_user.id
     if len(m.command) == 2 and m.command[1].startswith("notcopy"):
@@ -1547,3 +1546,4 @@ async def reset_group_command(client, message):
     reply_markup = InlineKeyboardMarkup(btn)
     await save_default_settings(grp_id)
     await message.reply_text("ꜱᴜᴄᴄᴇꜱꜱғᴜʟʟʏ ʀᴇꜱᴇᴛ ɢʀᴏᴜᴘ ꜱᴇᴛᴛɪɴɢꜱ...")
+
